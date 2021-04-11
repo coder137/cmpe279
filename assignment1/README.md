@@ -1,5 +1,8 @@
 # CMPE 279 Assignment 1
 
+Team Members:
+- Niket Naidu (013830115)
+
 # Pre-requisites
 
 - CMake version 3.10 or higher
