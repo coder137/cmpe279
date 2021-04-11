@@ -86,7 +86,10 @@ static void invoke_child(void) {
     // uid = getuid();
     // printf("Before: %d\r\n", uid);
 
-    if (0 != setuid(1000)) {
+    // Tested with both users (`nnaidu` and `nobody`)
+    const uid_t USER = 1000;
+    // const uid_t USER = 65534;
+    if (0 != setuid(USER)) {
         perror("Invalid user id");
         exit(EXIT_FAILURE);
     }
