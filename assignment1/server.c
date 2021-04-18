@@ -7,6 +7,9 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include <pwd.h>
+#include <sys/wait.h>
+
 // Constants
 #define PORT 80
 
@@ -73,6 +76,8 @@ static void invoke_child(void) {
 
     if (id > 0) {
         // Safely exit the parent
+        while (wait(NULL) > 0) {
+        }
         exit(0);
     } else if (id < 0) {
         // Error
@@ -87,9 +92,10 @@ static void invoke_child(void) {
     // printf("Before: %d\r\n", uid);
 
     // Tested with both users (`nnaidu` and `nobody`)
-    const uid_t USER = 1000;
+    struct passwd *nobody_passwd = getpwnam("nobody");
+    // const uid_t USER = 1000;
     // const uid_t USER = 65534;
-    if (0 != setuid(USER)) {
+    if (0 != setuid(nobody_passwd->pw_uid)) {
         perror("Invalid user id");
         exit(EXIT_FAILURE);
     }
