@@ -21,7 +21,7 @@ typedef enum {
 // Static function declarations
 static void arg_process_cli(int argc, char const *argv[]);
 static program_state_e arg_get_program_state(void);
-static int arg_get_server_socket_fb(void);
+static int arg_get_server_socket_fd(void);
 
 static struct sockaddr_in get_default_socket_address(void);
 static void parent_run();
@@ -102,7 +102,7 @@ static void parent_run() {
 // TODO, Get the server_fd from cli
 static void child_run() {
     struct sockaddr_in address = get_default_socket_address();
-    int server_fd = arg_get_server_socket_fb();
+    int server_fd = arg_get_server_socket_fd();
 
     int new_socket;
     int addrlen = sizeof(address);
@@ -186,4 +186,4 @@ static void arg_process_cli(int argc, char const *argv[]) {
 }
 
 static program_state_e arg_get_program_state(void) { return arg_pstate; }
-static int arg_get_server_socket_fb(void) { return arg_socket_fd; }
+static int arg_get_server_socket_fd(void) { return arg_socket_fd; }
