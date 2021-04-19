@@ -19,13 +19,12 @@ typedef enum {
 } program_state_e;
 
 // Static function declarations
-static void process_arguments(int argc, char const *argv[]);
+static void arg_process_cli(int argc, char const *argv[]);
+static program_state_e arg_get_program_state(void);
+static int arg_get_server_socket_fb(void);
 
 static void invoke_fork(void);
 static void invoke_exec(int server_fd);
-
-static program_state_e arg_get_program_state(void);
-static int arg_get_server_socket_fb(void);
 
 // State variables
 // * NOTE, Do not read/write these state variables, use getter functions above
@@ -42,12 +41,10 @@ int main(int argc, char const *argv[]) {
     }
     printf("-------\r\n");
 
-    process_arguments(argc, argv);
+    arg_process_cli(argc, argv);
 
     printf("%d\r\n", arg_get_program_state());
     printf("%d\r\n", arg_get_server_socket_fb());
-
-    return 0;
 
     int server_fd, new_socket;
     struct sockaddr_in address;
@@ -150,8 +147,8 @@ static void invoke_exec(int server_fd) {
     }
 }
 
-// Processing
-static void process_arguments(int argc, char const *argv[]) {
+// Argument Processing
+static void arg_process_cli(int argc, char const *argv[]) {
     // check for -s and -c arguments
     for (int i = 0; i < argc; i++) {
         const char *current = argv[i];
