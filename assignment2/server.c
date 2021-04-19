@@ -32,7 +32,6 @@ static void invoke_exec(int server_fd);
 
 // State variables
 // * NOTE, Do not read/write these state variables, use getter functions above
-// TODO, Seperate this into modules later
 static program_state_e arg_pstate = PARENT;
 static int arg_socket_fd = -1;
 
@@ -99,7 +98,6 @@ static void parent_run() {
     invoke_exec(server_fd);
 }
 
-// TODO, Get the server_fd from cli
 static void child_run() {
     struct sockaddr_in address = get_default_socket_address();
     int server_fd = arg_get_server_socket_fd();
@@ -176,7 +174,7 @@ static void arg_process_cli(int argc, char const *argv[]) {
                 exit(EXIT_FAILURE);
             }
 
-            // TODO, Unsafe if not number
+            // TODO, Incorrect if not number
             // -s -c edge case
             arg_socket_fd = atoi(argv[next]);
             i = next;
