@@ -23,6 +23,10 @@ static void arg_process_cli(int argc, char const *argv[]);
 static program_state_e arg_get_program_state(void);
 static int arg_get_server_socket_fb(void);
 
+static struct sockaddr_in get_default_socket_address(void);
+static void parent_run();
+static void child_run();
+
 static void invoke_fork(void);
 static void invoke_exec(int server_fd);
 
@@ -43,17 +47,40 @@ int main(int argc, char const *argv[]) {
 
     arg_process_cli(argc, argv);
 
+    // ? debugging
     printf("%d\r\n", arg_get_program_state());
     printf("%d\r\n", arg_get_server_socket_fb());
 
-    int server_fd, new_socket;
-    struct sockaddr_in address;
-    int opt = 1;
-    int addrlen = sizeof(address);
-    char buffer[102] = {0};
-    char *hello = "Hello from server";
-
     printf("execve=0x%p\n", execve);
+
+    switch (arg_get_program_state()) {
+    case PARENT:
+        parent_run();
+        break;
+    case CHILD:
+        child_run();
+        break;
+    default:
+        perror("Invalid program state");
+        exit(EXIT_FAILURE);
+        break;
+    }
+
+    return 0;
+}
+
+// Main operations
+static struct sockaddr_in get_default_socket_address(void) {
+    struct sockaddr_in address;
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(PORT);
+    return address;
+}
+
+static void parent_run() {
+    int server_fd;
+    int opt = 1;
 
     // Creating socket file descriptor
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
@@ -67,9 +94,8 @@ int main(int argc, char const *argv[]) {
         perror("setsockopt");
         exit(EXIT_FAILURE);
     }
-    address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons(PORT);
+
+    struct sockaddr_in address = get_default_socket_address();
 
     // Forcefully attaching socket to the port 80
     if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
@@ -82,15 +108,29 @@ int main(int argc, char const *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    printf("Server FD: %d\r\n", server_fd);
     invoke_fork();
     invoke_exec(server_fd);
+}
+
+// TODO, Get the server_fd from cli
+static void child_run() {
+    // ? debugging
+    printf("Child Running\r\n");
+
+    struct sockaddr_in address = get_default_socket_address();
+    int server_fd = arg_get_server_socket_fb();
+
+    int new_socket;
+    int addrlen = sizeof(address);
+    char buffer[102] = {0};
+    char *hello = "Hello from server";
 
     if ((new_socket = accept(server_fd, (struct sockaddr *)&address,
                              (socklen_t *)&addrlen)) < 0) {
         perror("accept");
         exit(EXIT_FAILURE);
     }
+
     printf("Waiting for data from client\r\n");
     int valread = read(new_socket, buffer, 1024);
     (void)valread;
@@ -98,10 +138,9 @@ int main(int argc, char const *argv[]) {
 
     send(new_socket, hello, strlen(hello), 0);
     printf("Hello message sent\n");
-
-    return 0;
 }
 
+// Invoke operations
 static void invoke_fork(void) {
     pid_t id = fork();
 
