@@ -13,10 +13,42 @@
 // Constants
 #define PORT 80
 
+typedef enum {
+    PARENT,
+    CHILD,
+} program_state_e;
+
 // Static function declarations
-static void invoke_child(void);
+static void process_arguments(int argc, char const *argv[]);
+
+static void invoke_fork(void);
+static void invoke_exec(int server_fd);
+
+static program_state_e arg_get_program_state(void);
+static int arg_get_server_socket_fb(void);
+
+// State variables
+// * NOTE, Do not read/write these state variables, use getter functions above
+// TODO, Seperate this into modules later
+static program_state_e arg_pstate = PARENT;
+static int arg_socket_fd = -1;
 
 int main(int argc, char const *argv[]) {
+
+    // ? debugging
+    printf("Arguments: %d\r\n", argc);
+    for (int i = 0; i < argc; i++) {
+        printf("%s\r\n", argv[i]);
+    }
+    printf("-------\r\n");
+
+    process_arguments(argc, argv);
+
+    printf("%d\r\n", arg_get_program_state());
+    printf("%d\r\n", arg_get_server_socket_fb());
+
+    return 0;
+
     int server_fd, new_socket;
     struct sockaddr_in address;
     int opt = 1;
@@ -53,7 +85,9 @@ int main(int argc, char const *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    invoke_child();
+    printf("Server FD: %d\r\n", server_fd);
+    invoke_fork();
+    invoke_exec(server_fd);
 
     if ((new_socket = accept(server_fd, (struct sockaddr *)&address,
                              (socklen_t *)&addrlen)) < 0) {
@@ -71,7 +105,7 @@ int main(int argc, char const *argv[]) {
     return 0;
 }
 
-static void invoke_child(void) {
+static void invoke_fork(void) {
     pid_t id = fork();
 
     if (id > 0) {
@@ -103,3 +137,42 @@ static void invoke_child(void) {
     // uid = getuid();
     // printf("After: %d\r\n", uid);
 }
+
+static void invoke_exec(int server_fd) {
+    char server_fd_str[12] = {0};
+    sprintf(server_fd_str, "%d", server_fd);
+
+    char *argv[] = {"./server", "-c", "-s", server_fd_str, NULL};
+    int err = execv("./server", argv);
+    if (err < 0) {
+        perror("Failed to exec ./server");
+        exit(EXIT_FAILURE);
+    }
+}
+
+// Processing
+static void process_arguments(int argc, char const *argv[]) {
+    // check for -s and -c arguments
+    for (int i = 0; i < argc; i++) {
+        const char *current = argv[i];
+        if (strcmp(current, "-c") == 0) {
+            arg_pstate = CHILD;
+            continue;
+        } else if (strcmp(current, "-s") == 0) {
+            int next = i + 1;
+            if (next >= argc) {
+                perror("Add the server socket fd after -s");
+                exit(EXIT_FAILURE);
+            }
+
+            // TODO, Unsafe if not number
+            // -s -c edge case
+            arg_socket_fd = atoi(argv[next]);
+            i = next;
+            continue;
+        }
+    }
+}
+
+static program_state_e arg_get_program_state(void) { return arg_pstate; }
+static int arg_get_server_socket_fb(void) { return arg_socket_fd; }
