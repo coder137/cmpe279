@@ -37,19 +37,7 @@ static program_state_e arg_pstate = PARENT;
 static int arg_socket_fd = -1;
 
 int main(int argc, char const *argv[]) {
-
-    // ? debugging
-    printf("Arguments: %d\r\n", argc);
-    for (int i = 0; i < argc; i++) {
-        printf("%s\r\n", argv[i]);
-    }
-    printf("-------\r\n");
-
     arg_process_cli(argc, argv);
-
-    // ? debugging
-    printf("%d\r\n", arg_get_program_state());
-    printf("%d\r\n", arg_get_server_socket_fb());
 
     printf("execve=0x%p\n", execve);
 
@@ -63,7 +51,6 @@ int main(int argc, char const *argv[]) {
     default:
         perror("Invalid program state");
         exit(EXIT_FAILURE);
-        break;
     }
 
     return 0;
@@ -114,9 +101,6 @@ static void parent_run() {
 
 // TODO, Get the server_fd from cli
 static void child_run() {
-    // ? debugging
-    printf("Child Running\r\n");
-
     struct sockaddr_in address = get_default_socket_address();
     int server_fd = arg_get_server_socket_fb();
 
@@ -157,21 +141,12 @@ static void invoke_fork(void) {
 
     // Child id == 0
 
-    // uid_t uid = 0;
-    // uid = getuid();
-    // printf("Before: %d\r\n", uid);
-
     // Tested with both users (`nnaidu` and `nobody`)
     struct passwd *nobody_passwd = getpwnam("nobody");
-    // const uid_t USER = 1000;
-    // const uid_t USER = 65534;
     if (0 != setuid(nobody_passwd->pw_uid)) {
         perror("Invalid user id");
         exit(EXIT_FAILURE);
     }
-
-    // uid = getuid();
-    // printf("After: %d\r\n", uid);
 }
 
 static void invoke_exec(int server_fd) {
